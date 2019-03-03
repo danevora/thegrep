@@ -5,3 +5,4 @@ authors = ["Daniel Evora <devora@live.unc.edu>, Peter Morrow <peterjm@live.unc.e
 edition = "2018"
 
 [dependencies]
+structopt = "0.2"
