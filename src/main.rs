@@ -14,6 +14,8 @@
 extern crate structopt;
 use structopt::StructOpt;
 
+use std::io;
+
 const QUIT_STRING: &str = "quit\n";
 const EXIT_OK: i32 = 0;
 const EXIT_ERR: i32 = 1;
