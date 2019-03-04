@@ -41,14 +41,8 @@ use self::tokenizer::Tokenizer;
 
 fn main() {
     let opt  = Opt::from_args();
-    loop {
-        eval(&read(), &opt);
-    }
-}
-
-fn eval(input: &str, opt: &Opt) {
     if opt.tokens {
-        eval_show_tokens(input);
+        eval_show_tokens(&opt.pattern);
     }
 }
 
@@ -58,27 +52,5 @@ fn eval_show_tokens(input: &str) {
         println!("{:?}", token);
     }
     print!("\n");
-}
-
-fn read() -> String {
-    match read_line() {
-        Ok(line) => {
-            if line == QUIT_STRING {
-                std::process::exit(EXIT_OK);
-            } else {
-                line
-            }
-        }
-        Err(message) => {
-            eprintln!("Err: {}", message);
-            std::process::exit(EXIT_ERR);
-        }
-    }
-}
-
-fn read_line() -> Result<String, io::Error> {
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-    Ok(input)
 }
 
