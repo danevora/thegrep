@@ -13,7 +13,6 @@
 
 extern crate structopt;
 use structopt::StructOpt;
-
 use std::io;
 
 const QUIT_STRING: &str = "quit\n";
@@ -22,7 +21,6 @@ const EXIT_ERR: i32 = 1;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "thegrep", about = "Tar Heel egrep", author = "")]
-
 struct Opt {
     
     #[structopt(short = "p", long = "parse", help = "Show Parsed AST")]

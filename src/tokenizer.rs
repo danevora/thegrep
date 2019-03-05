@@ -78,7 +78,7 @@ impl<'str> Tokenizer<'str> {
     fn lex_char(&mut self) -> Token {
         let c = self.chars.next().unwrap();
         match c {
-            c  => Token::Char(c),
+            c => Token::Char(c),
             _ => panic!("unknwon register"),
         }
     }
