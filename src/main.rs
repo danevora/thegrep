@@ -38,11 +38,16 @@ struct Opt {
 
 pub mod tokenizer;
 use self::tokenizer::Tokenizer;
+pub mod parser;
+use self::parser::Parser;
 
 fn main() {
     let opt  = Opt::from_args();
     if opt.tokens {
         eval_show_tokens(&opt.pattern);
+    }
+    if opt.parse {
+        eval_show_parse(&opt.pattern);
     }
 }
 
@@ -52,5 +57,15 @@ fn eval_show_tokens(input: &str) {
         println!("{:?}", token);
     }
     print!("\n");
+}
+
+fn eval_show_parse(input: &str) {
+    match Parser::parse(Tokenizer::new(input)) {
+        Ok(statement) => {
+            println!("{:?}", statement);
+        },
+        Err(msg) => eprintln!("thegrep: {}", msg),
+    }
+    println!("\n");
 }
 
