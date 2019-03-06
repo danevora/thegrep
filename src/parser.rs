@@ -72,17 +72,23 @@ impl<'tokens> Parser<'tokens> {
     }
 
     fn cat(&mut self) -> Result<AST, String> {
-        let clos = self.closure()?;
+        let clos = self.clo()?;
+        
     }
 
     fn clo(&mut self) -> Result<AST, String> {
         let at = self.atom()?;
         if let Some(kleene) = self.tokens.peek() {
             match kleene {
-                '*' => closure(at);
+                Token::KleeneStar => {
+                    self.take_next_token();
+                    Ok(closure(at))
+                },
+                _ => Ok(at),
             }
+        } else {
+            Ok(at)
         }
-
     }
 
 
