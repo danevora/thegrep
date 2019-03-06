@@ -71,6 +71,21 @@ impl<'tokens> Parser<'tokens> {
         */
     }
 
+    fn cat(&mut self) -> Result<AST, String> {
+        let clos = self.closure()?;
+    }
+
+    fn clo(&mut self) -> Result<AST, String> {
+        let at = self.atom()?;
+        if let Some(kleene) = self.tokens.peek() {
+            match kleene {
+                '*' => closure(at);
+            }
+        }
+
+    }
+
+
     fn atom(&mut self) -> Result<AST, String> {
         let next = self.take_next_token();
         match next {
@@ -86,6 +101,9 @@ impl<'tokens> Parser<'tokens> {
             _ => Err(format!("Unexpected end of input"))
         }
     }
+}
+
+impl<'tokens> Parser<'tokens> {
 
     fn take_next_token(&mut self) -> Result<Token, String> {
         if let Some(token) = self.tokens.next() {
