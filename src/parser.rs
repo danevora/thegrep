@@ -50,6 +50,58 @@ impl<'tokens> Parser<'tokens> {
 
 //Add Tests here
 
+#[cfg(test)]
+mod public_api {
+    use super::*;
+
+    #[test]
+    fn parse_atoms() {
+        let atom_char = Parser::parse(Tokenizer::new("a")).unwrap();
+        assert_eq!(character('a'), atom_char);
+        let atom_any_char = Parser::parse(Tokenizer::new(".")).unwrap();
+        assert_eq!(AST::AnyChar, atom_any_char);
+        let atom_char_paren = Parser::parse(Tokenizer::new("(a)")).unwrap();
+        assert_eq!(character('a'), atom_char_paren);
+    }
+
+    #[test]
+    fn parse_clo() {
+        let clo_char = Parser::parse(Tokenizer::new("a*")).unwrap();
+        assert_eq!(closure(character('a')), clo_char);
+        let clo_any_char = Parser::parse(Tokenizer::new(".*")).unwrap();
+        assert_eq!(closure(AST::AnyChar), clo_any_char);
+        let clo_char_paren = Parser::parse(Tokenizer::new("(a)*")).unwrap();
+        assert_eq!(closure(character('a')), clo_char_paren);
+          
+    }
+    
+    #[test]
+    fn parse_cat() {
+        let cat_atoms = Parser::parse(Tokenizer::new("ab")).unwrap();
+        assert_eq!(catenation(character('a'), character('b')), cat_atoms);
+        let cat_clo = Parser::parse(Tokenizer::new(".b*")).unwrap();
+        assert_eq!(catenation(AST::AnyChar, closure(character('b'))), cat_clo);
+        let cat_clo_paren = Parser::parse(Tokenizer::new("(ab)*")).unwrap();
+        assert_eq!(closure(catenation(character('a'), character('b'))), cat_clo_paren);
+        let cat_mult = Parser::parse(Tokenizer::new("abc")).unwrap();
+        assert_eq!(catenation(character('a'), catenation(character('b'), character('c'))), cat_mult);
+    }
+
+    #[test] 
+    fn parse_reg_expr() {
+        let alt_atoms = Parser::parse(Tokenizer::new("a|b")).unwrap();
+        assert_eq!(alternation(character('a'), character('b')), alt_atoms);
+        let alt_clo = Parser::parse(Tokenizer::new("a*|b*")).unwrap();
+        assert_eq!(alternation(closure(character('a')), closure(character('b'))), alt_clo);
+        let alt_cat = Parser::parse(Tokenizer::new("ab|cd")).unwrap();
+        assert_eq!(alternation(catenation(character('a'), character('b')), catenation(character('c'), character('d'))), alt_cat);
+        let alt_everything = Parser::parse(Tokenizer::new("((ab)*c)|(.a(b|c)*)")).unwrap();
+        assert_eq!(alternation(
+            catenation(closure(catenation(character('a'), character('b'))), character('c')), 
+            catenation(AST::AnyChar, catenation(character('a'), closure(alternation(character('b'), character('c')))))), alt_everything);
+    }
+}
+
 //helper functions for implementing thegrep grammar
 impl<'tokens> Parser<'tokens> {
 
@@ -131,6 +183,15 @@ impl<'tokens> Parser<'tokens> {
             _ => Err(format!("Unexpected end of input"))
         }
     }
+}
+
+#[cfg(test)]
+mod private_api {
+    use super::*;
+    
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // PETER RIGHT LAST HALF OF PARSER TESTS HERE
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 }
 
 //helper functions for parsing
