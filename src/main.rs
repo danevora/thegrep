@@ -11,15 +11,18 @@
  * to this code to anyone other than the course staff and partner.
  */
 
+//importing the library for structopt
 extern crate structopt;
 use structopt::StructOpt;
-
+//importing library fot std in/out
 use std::io;
 
-const QUIT_STRING: &str = "quit\n";
+//initializing constants for quitting program
+const QUIT_STRING: &str = "quit\n"; 
 const EXIT_OK: i32 = 0;
 const EXIT_ERR: i32 = 1;
 
+//set up structopt derivation for flags of thegrep
 #[derive(Debug, StructOpt)]
 #[structopt(name = "thegrep", about = "Tar Heel egrep", author = "")]
 
@@ -36,11 +39,14 @@ struct Opt {
 
 }
 
+//importing tokenizer and parser functionalities from the other files
 pub mod tokenizer;
 use self::tokenizer::Tokenizer;
 pub mod parser;
 use self::parser::Parser;
 
+//main takes in opt from the args passed in on the command line, if it encounters the parse or
+//tokens flag, it will carry out the helped functions for each respectively
 fn main() {
     let opt  = Opt::from_args();
     if opt.tokens {
@@ -51,6 +57,8 @@ fn main() {
     }
 }
 
+//declares a mutable tokenizer for input. Then loops through this input and tokenizes the
+//individual elements of input and prtins them to stdout
 fn eval_show_tokens(input: &str) {
     let mut tokens = Tokenizer::new(input);
     while let Some(token) = tokens.next() {
@@ -59,6 +67,8 @@ fn eval_show_tokens(input: &str) {
     print!("\n");
 }
 
+//declares a parser to parse a tokenizer of input. If everything is parsed, the returnes statement
+//from parser.rs is printed, otherwise an error is printed to stderr 
 fn eval_show_parse(input: &str) {
     match Parser::parse(Tokenizer::new(input)) {
         Ok(statement) => {
