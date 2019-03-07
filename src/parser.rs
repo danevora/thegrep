@@ -24,7 +24,7 @@ pub fn closure(value: AST) -> AST {
     AST::Closure(Box::new(value))
 }
 
-pub fn char(value: char) -> AST {
+pub fn character(value: char) -> AST {
     AST::Char(value)
 }
 
@@ -52,42 +52,51 @@ impl<'tokens> Parser<'tokens> {
 impl<'tokens> Parser<'tokens> {
 
     fn reg_expr(&mut self) -> Result<AST, String> {
-       // let mut cat;
-        if let Some(token) = self.tokens.peek() {
-           self.atom()
-        } else {
-            Err(format!("Unexpected end of input"))
-        }
-        /*
-        let next = self.tokens.peek();
-        if let Some(uni) = next {
-            match next.unwrap() {
-                '|' => self.alt(),
-                _ => Ok(cat),
+        let ast = self.cat()?;
+        if let Some(token) = self.tokens.peek(){
+            match token {
+                Token::UnionBar => {
+                    self.consume_token(Token::UnionBar);
+                    let ast_two = self.reg_expr()?;
+                    Ok(alternation(ast, ast_two))
+                },
+                _ => Ok(ast),
             }
         } else {
-            Ok(cat)
+            Ok(ast)
         }
-        */
+        
     }
 
     fn cat(&mut self) -> Result<AST, String> {
-        let clos = self.clo()?;
+        let closure = self.clo()?;
+        if let Some(token) = self.tokens.peek() {
+            match token {
+                Token::UnionBar => Ok(closure),
+                Token::LParen | Token::AnyChar | Token::Char(_) => {
+                    let closure_two = self.cat()?;
+                    Ok(catenation(closure, closure_two))
+                },
+                _ => Ok(closure),
+            }
+        } else {
+            Ok(closure)
+        }
         
     }
 
     fn clo(&mut self) -> Result<AST, String> {
-        let at = self.atom()?;
+        let atom = self.atom()?;
         if let Some(kleene) = self.tokens.peek() {
             match kleene {
                 Token::KleeneStar => {
                     self.take_next_token();
-                    Ok(closure(at))
+                    Ok(closure(atom))
                 },
-                _ => Ok(at),
+                _ => Ok(atom),
             }
         } else {
-            Ok(at)
+            Ok(atom)
         }
     }
 
@@ -103,7 +112,7 @@ impl<'tokens> Parser<'tokens> {
             Ok(Token::AnyChar) => {
                 Ok(AST::AnyChar)
             },
-            Ok(Token::Char(c)) => Ok(AST::Char(c)),
+            Ok(Token::Char(c)) => Ok(character(c)),
             _ => Err(format!("Unexpected end of input"))
         }
     }
