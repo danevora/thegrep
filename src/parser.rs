@@ -72,11 +72,14 @@ mod public_api {
         assert_eq!(closure(AST::AnyChar), clo_any_char);
         let clo_char_paren = Parser::parse(Tokenizer::new("(a)*")).unwrap();
         assert_eq!(closure(character('a')), clo_char_paren);
-          
+        let no_clo = Parser::parse(Tokenizer::new("a")).unwrap();
+        assert_eq!(character('a'), no_clo);
     }
     
     #[test]
     fn parse_cat() {
+        let no_cat = Parser::parse(Tokenizer::new("a")).unwrap();
+        assert_eq!(character('a'), no_cat);
         let cat_atoms = Parser::parse(Tokenizer::new("ab")).unwrap();
         assert_eq!(catenation(character('a'), character('b')), cat_atoms);
         let cat_clo = Parser::parse(Tokenizer::new(".b*")).unwrap();
@@ -99,7 +102,96 @@ mod public_api {
         assert_eq!(alternation(
             catenation(closure(catenation(character('a'), character('b'))), character('c')), 
             catenation(AST::AnyChar, catenation(character('a'), closure(alternation(character('b'), character('c')))))), alt_everything);
+        let no_alt = Parser::parse(Tokenizer::new("a")).unwrap();
+        assert_eq!(character('a'), no_alt);
     }
+    
+    #[test]
+    fn reg_expr() {
+        assert_eq!(
+            Parser::from("a").reg_expr().unwrap(),
+            character('a')
+        );
+        assert_eq!(
+            Parser::from("a|b").reg_expr().unwrap(),
+            alternation(character('a'), character('b'))
+        );
+        assert_eq!(
+            Parser::from("a*|b*").reg_expr().unwrap(),
+            alternation(closure(character('a')), closure(character('b')))
+        );
+        assert_eq!(
+            Parser::from("ab|cd").reg_expr().unwrap(),
+            alternation(catenation(character('a'), character('b')), catenation(character('c'), character('d')))
+        );
+        assert_eq!(
+            Parser::from("((ab)*c)|(.a(b|c)*)").reg_expr().unwrap(),
+            alternation(
+            catenation(closure(catenation(character('a'), character('b'))), character('c')), 
+            catenation(AST::AnyChar, catenation(character('a'), closure(alternation(character('b'), character('c'))))))
+        );
+    }
+    
+    #[test]
+    fn cat() {
+        assert_eq!(
+            Parser::from("ab").cat().unwrap(),
+            catenation(character('a'), character('b'))
+        );
+        assert_eq!(
+            Parser::from(".a*").cat().unwrap(),
+            catenation(AST::AnyChar, closure(character('a')))
+        );
+        assert_eq!(
+            Parser::from("(ab)*").cat().unwrap(),
+            closure(catenation(character('a'), character('b')))
+        );
+        assert_eq!(
+            Parser::from("abc").cat().unwrap(),
+            catenation(character('a'),catenation(character('b'), character('c')))
+        );
+        assert_eq!(
+            Parser::from("a").cat().unwrap(),
+            character('a')
+        );
+    }
+    
+    #[test]
+    fn clo() {
+        assert_eq!(
+            Parser::from("a*").clo().unwrap(),
+            closure(character('a'))
+        );
+        assert_eq!(
+            Parser::from(".*").clo().unwrap(),
+            closure(AST::AnyChar)
+        );
+        assert_eq!(
+            Parser::from("(a)*").clo().unwrap(),
+            closure(character('a'))
+        );
+        assert_eq!(
+            Parser::from("a").clo().unwrap(),
+            character('a')
+        );
+    }
+
+    #[test]
+    fn atom() {
+        assert_eq!(
+            Parser::from("a").atom().unwrap(),
+            character('a')
+        );
+        assert_eq!(
+            Parser::from(".").atom().unwrap(),
+            AST::AnyChar
+        );
+        assert_eq!(
+            Parser::from("(a)").atom().unwrap(),
+            character('a')
+        );
+    }
+
 }
 
 //helper functions for implementing thegrep grammar
@@ -185,18 +277,16 @@ impl<'tokens> Parser<'tokens> {
     }
 }
 
-#[cfg(test)]
-mod private_api {
-    use super::*;
-    
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // PETER RIGHT LAST HALF OF PARSER TESTS HERE
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-}
-
 //helper functions for parsing
 impl<'tokens> Parser<'tokens> {
-    
+
+    //helper method for constructing parsers in unit tests
+    fn from(input: &'tokens str) -> Parser<'tokens> {
+        Parser {
+            tokens: Tokenizer::new(input).peekable(),
+        }
+    }
+
     //this functions moves the iterator over the tokens forward and returns the token that was
     //next, or returns an error if this method was called and there were no more tokens
     fn take_next_token(&mut self) -> Result<Token, String> {
