@@ -3,7 +3,7 @@ use std::str::Chars;
 
 /** 
  * Token types for 'thegrep' are defined below
- */ 
+ */
 #[derive(Debug, PartialEq)]
     pub enum Token {
     LParen,
