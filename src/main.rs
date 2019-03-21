@@ -17,6 +17,10 @@ use structopt::StructOpt;
 //importing library fot std in/out
 use std::io;
 
+pub mod nfa;
+use self::nfa::NFA;
+use self::nfa::helpers::nfa_dot;
+
 //initializing constants for quitting program
 const QUIT_STRING: &str = "quit\n"; 
 const EXIT_OK: i32 = 0;
