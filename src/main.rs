@@ -41,6 +41,9 @@ struct Opt {
     #[structopt(help = "Regular Expression Pattern")]
     pattern: String,
 
+    #[structopt(short = "d", long = "dot")]
+    dot: bool,
+
 }
 
 //importing tokenizer and parser functionalities from the other files
@@ -58,6 +61,9 @@ fn main() {
     }
     if opt.parse {
         eval_show_parse(&opt.pattern);
+    }
+    if opt.dot {
+        eval_show_dot(&opt.pattern);
     }
 }
 
@@ -81,5 +87,11 @@ fn eval_show_parse(input: &str) {
         Err(msg) => eprintln!("thegrep: {}", msg),
     }
     println!("\n");
+}
+
+fn eval_show_dot(input: &str) {
+    let nfa = NFA::from(&input).unwrap();
+    println!("{}", nfa_dot(&nfa));
+    std::process::exit(0);
 }
 
