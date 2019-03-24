@@ -89,6 +89,7 @@ fn eval_show_parse(input: &str) {
     println!("\n");
 }
 
+//helper method for when dot flag is used 
 fn eval_show_dot(input: &str) {
     let nfa = NFA::from(&input).unwrap();
     println!("{}", nfa_dot(&nfa));
