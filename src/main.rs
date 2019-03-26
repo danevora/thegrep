@@ -26,6 +26,7 @@ const EXIT_ERR: i32 = 1;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "thegrep", about = "Tar Heel egrep", author = "")]
 
+//declring optionals for thegrep function
 struct Opt {
     
     #[structopt(short = "p", long = "parse", help = "Show Parsed AST")]
