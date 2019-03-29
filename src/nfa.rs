@@ -154,15 +154,22 @@ impl NFA {
                 }
             },
             AST::Alternation(lhs, rhs) => {
-                let frag_one = self.gen_fragment(&lhs);
-                let frag_two = self.gen_fragment(&rhs);
+                let mut frag_one = self.gen_fragment(&lhs);
+                let mut frag_two = self.gen_fragment(&rhs);
                 let state = self.add(Split(Some(frag_one.start), Some(frag_two.start)));
+                frag_one.ends.append(&mut frag_two.ends);
                 Fragment {
                  start: state,
-                 /**
-                  * !!! Continue here !!!
-                  */
                  ends: frag_one.ends,
+                }
+            },
+            AST::Closure(expr) => {
+                let mut frag = self.gen_fragment(&expr);
+                let mut state = self.add(Split(Some(frag.start), None));
+                self.join_fragment(&frag, state);
+                Fragment {
+                    start: state,
+                    ends: vec![state],
                 }
             },
             node => panic!("Unimplemented branch of gen_fragment: {:?}", node)
