@@ -56,10 +56,22 @@ impl NFA {
      * input is accepted by the input string.
      */
     pub fn accepts(&self, input: &str) -> bool {
-        false
+        
     }
 }
 
+#[cfg(test)]
+mod public_api {
+    use super::*;
+    
+    #[test] 
+    fn simple() {
+        let a = NFA::from("a");
+        assert_eq!(accepts(a, "a"), true);
+        assert_eq!(accepts(a, "b"), false);
+    }
+
+}
 /**
  * ===== Internal API =====
  */
