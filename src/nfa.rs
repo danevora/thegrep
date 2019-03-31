@@ -1,3 +1,6 @@
+use std::iter::Peekable;
+use std::str::Chars;
+
 pub mod helpers;
 
 // Starter code for PS06 - thegrep
@@ -56,7 +59,36 @@ impl NFA {
      * input is accepted by the input string.
      */
     pub fn accepts(&self, input: &str) -> bool {
-        
+        let mut curr_state = &self.states[self.start];
+        let mut chars = input.chars();
+        self.recur(curr_state, chars)
+    } 
+
+     fn recur(&self, curr_state: State, mut chars: std::str::Chars) -> bool {
+            match curr_state {
+                State::Match(expected_char, Some(id)) => {
+                    match expected_char {
+                        Char::Any => {
+                            if (chars.next() == Some('*')) {
+                                curr_state = self.states[id];   
+                                self.recur(curr_state, chars)
+                            } else {
+                                false
+                            }
+                        },
+                        Char::Literal(c) => {
+                            if(chars.next() == Some(c)) {
+                                curr_state = self.states[id];
+                                self.recur(curr_state, chars)
+                            } else {
+                                false
+                            }
+                        },
+                    }
+                },
+                State::End => true,
+                _ => false,
+         }   
     }
 }
 
