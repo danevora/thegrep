@@ -17,6 +17,10 @@ use structopt::StructOpt;
 //importing library fot std in/out
 use std::io;
 
+pub mod nfa;
+use self::nfa::NFA;
+use self::nfa::helpers::nfa_dot;
+
 //initializing constants for quitting program
 const QUIT_STRING: &str = "quit\n"; 
 const EXIT_OK: i32 = 0;
@@ -38,6 +42,9 @@ struct Opt {
     #[structopt(help = "Regular Expression Pattern")]
     pattern: String,
 
+    #[structopt(short = "d", long = "dot")]
+    dot: bool,
+
 }
 
 //importing tokenizer and parser functionalities from the other files
@@ -55,6 +62,9 @@ fn main() {
     }
     if opt.parse {
         eval_show_parse(&opt.pattern);
+    }
+    if opt.dot {
+        eval_show_dot(&opt.pattern);
     }
 }
 
@@ -78,5 +88,12 @@ fn eval_show_parse(input: &str) {
         Err(msg) => eprintln!("thegrep: {}", msg),
     }
     println!("\n");
+}
+
+//helper method for when dot flag is used 
+fn eval_show_dot(input: &str) {
+    let nfa = NFA::from(&input).unwrap();
+    println!("{}", nfa_dot(&nfa));
+    std::process::exit(0);
 }
 
