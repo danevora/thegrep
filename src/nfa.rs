@@ -59,32 +59,38 @@ impl NFA {
      * input is accepted by the input string.
      */
     pub fn accepts(&self, input: &str) -> bool {
-        let mut curr_state = &self.states[self.start];
+        let curr_state = self.start;
         let mut chars = input.chars();
         self.recur(curr_state, chars)
     } 
 
-     fn recur(&self, curr_state: State, mut chars: std::str::Chars) -> bool {
-            match curr_state {
+     fn recur(&self, mut curr_state: StateId, mut chars: std::str::Chars) -> bool {
+            match &self.states[curr_state] {
                 State::Match(expected_char, Some(id)) => {
                     match expected_char {
-                        Char::Any => {
-                            if (chars.next() == Some('*')) {
-                                curr_state = self.states[id];   
+                        Char::Literal(c) => {
+                            if(chars.next() == Some(*c)) {
+                                curr_state = *id;
                                 self.recur(curr_state, chars)
                             } else {
                                 false
                             }
                         },
-                        Char::Literal(c) => {
-                            if(chars.next() == Some(c)) {
-                                curr_state = self.states[id];
-                                self.recur(curr_state, chars)
-                            } else {
-                                false
-                            }
+                        _ => {
+                            curr_state = *id;
+                            self.recur(curr_state, chars)
                         },
                     }
+                },
+                State::Split(Some(leg_one), Some(leg_two)) => {
+                    let clone = chars.clone();
+                    if(self.recur(*leg_one, chars)) {
+                        true
+                    } else if (self.recur(*leg_two, clone)) {
+                        true
+                    } else {
+                        false
+                    }    
                 },
                 State::End => true,
                 _ => false,
