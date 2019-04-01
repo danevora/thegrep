@@ -64,8 +64,12 @@ impl NFA {
         self.recur(curr_state, chars)
     } 
 
-     fn recur(&self, mut curr_state: StateId, mut chars: std::str::Chars) -> bool {
+    pub fn recur(&self, mut curr_state: StateId, mut chars: std::str::Chars) -> bool {
             match &self.states[curr_state] {
+                State::Start(Some(id)) => {
+                    curr_state = *id;
+                    self.recur(curr_state, chars)
+                },
                 State::Match(expected_char, Some(id)) => {
                     match expected_char {
                         Char::Literal(c) => {
@@ -104,10 +108,29 @@ mod public_api {
     
     #[test] 
     fn simple() {
-        let a = NFA::from("a");
-        assert_eq!(accepts(a, "a"), true);
-        assert_eq!(accepts(a, "b"), false);
+        let input = NFA::from("a").unwrap();
+        assert_eq!(input.accepts("a"), true);
+        assert_eq!(input.accepts("b"), false);
     }
+
+    #[test]
+    fn catenation() {
+        let input = NFA::from("abc").unwrap();
+        assert_eq!(input.accepts("abc"), true);
+        assert_eq!(input.accepts("abd"), false);
+        assert_eq!(input.accepts("adc"), false);
+        assert_eq!(input.accepts("dbc"), false);
+        assert_eq!(input.accepts("cba"), false);
+    }
+
+    #[test]
+    fn simple_alternation() {
+        let input = NFA::from("a|b").unwrap();
+        assert_eq!(input.accepts("a"), true);
+        assert_eq!(input.accepts("b"), true);
+    }
+
+
 
 }
 /**
