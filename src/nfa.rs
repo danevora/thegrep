@@ -130,8 +130,6 @@ mod public_api {
         assert_eq!(input.accepts("b"), true);
     }
 
-
-
 }
 /**
  * ===== Internal API =====

@@ -45,6 +45,9 @@ struct Opt {
     #[structopt(short = "d", long = "dot")]
     dot: bool,
 
+    #[structopt(help = "FILES")]
+    path: Vec<String>,
+
 }
 
 //importing tokenizer and parser functionalities from the other files
@@ -52,11 +55,14 @@ pub mod tokenizer;
 use self::tokenizer::Tokenizer;
 pub mod parser;
 use self::parser::Parser;
+use std::fs::File;
+use std::io::BufRead;
 
 //main takes in opt from the args passed in on the command line, if it encounters the parse or
 //tokens flag, it will carry out the helped functions for each respectively
 fn main() {
     let opt  = Opt::from_args();
+    
     if opt.tokens {
         eval_show_tokens(&opt.pattern);
     }
@@ -65,6 +71,41 @@ fn main() {
     }
     if opt.dot {
         eval_show_dot(&opt.pattern);
+    }
+
+    let mut input = "(.)*".to_string();
+    input.push_str(&opt.pattern);
+    let nfa = NFA::from(&input).unwrap();
+    if opt.path.len() > 0 {
+        read_files(&opt, &nfa);
+    } else {
+        print_stdin(&nfa);
+    }
+}
+
+fn print_stdin(nfa: &NFA) {
+    let stdin = io::stdin();
+    let reader = stdin.lock();
+    check(nfa, reader);
+}
+
+fn read_files(opt: &Opt, nfa: &NFA) -> io::Result<()> {
+    for paths in opt.path.iter() {
+        let file = File::open(paths)?;
+        let reader = io::BufReader::new(file);
+        check(nfa, reader);
+    }
+    Ok(())
+}
+
+fn check<R: BufRead>(nfa: &NFA, reader: R) {
+    for line in reader.lines() {
+        if let Ok(point) = line {
+            let result = nfa.accepts(&point);
+            if (result) {
+                println!("{}", &point);
+            }
+        }
     }
 }
 
