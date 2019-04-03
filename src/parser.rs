@@ -288,6 +288,14 @@ impl<'tokens> Parser<'tokens> {
 
 //helper functions for parsing
 impl<'tokens> Parser<'tokens> {
+
+    //helper method for constructing parsers in unit tests
+    fn from(input: &'tokens str) -> Parser<'tokens> {
+        Parser {
+            tokens: Tokenizer::new(input).peekable(),
+        }
+    }
+    
     //this functions moves the iterator over the tokens forward and returns the token that was
     //next, or returns an error if this method was called and there were no more tokens
     fn take_next_token(&mut self) -> Result<Token, String> {

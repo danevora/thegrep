@@ -54,49 +54,50 @@ impl NFA {
      * Given an input string, simulate the NFA to determine if the
      * input is accepted by the input string.
      */
+
     pub fn accepts(&self, input: &str) -> bool {
-        let curr_state = self.start;
-        let chars = input.chars();
-        self.recur(curr_state, chars)
+        let curr_state = self.start;    // sets the current state to the start
+        let chars = input.chars();      // creating an iterator over the characters of the input 
+        self.recur(curr_state, chars)   // calls recursive helper function where StateId and iterator state are kept track of
     }
 
     pub fn recur(&self, mut curr_state: StateId, mut chars: std::str::Chars) -> bool {
-        match &self.states[curr_state] {
-            State::Start(Some(id)) => {
-                curr_state = *id;
-                self.recur(curr_state, chars)
+        match &self.states[curr_state] {    // matches the current state to one of State's enums
+            State::Start(Some(id)) => {         // if the curr_state is the Start state, this is matched
+                curr_state = *id;               // curr_state is now set to whatever state self.start points to
+                self.recur(curr_state, chars)   // recusrive call to start testing input from state right after the start state
             }
-            State::Match(expected_char, Some(id)) => match expected_char {
-                Char::Literal(c) => {
-                    if let Some(letter) = chars.next() {
-                        if letter == *c {
-                            curr_state = *id;
-                            self.recur(curr_state, chars)
+            State::Match(expected_char, Some(id)) => match expected_char {  // if the curr_state is a Match state, this is matched 
+                Char::Literal(c) => {                                       // if the Match state is of type Char::Literal, this is matched
+                    if let Some(letter) = chars.next() {                    // checks to make sure there is something left in input and moves forward on iterator
+                        if letter == *c {                                   // checks to see if the next letter in input is equal to the character matched by c
+                            curr_state = *id;                               // curr_state changes to wherever curr_state points to
+                            self.recur(curr_state, chars)                   // recursive call 
                         } else {
-                            self.recur(self.start, chars)
+                            self.recur(self.start, chars)                   // case for if there isn't a match at curr_state, but rest of input needs to be checked. Go back to start state
                         }
-                    } else {
-                        false
+                    } else {        
+                        false                                               // false if the input ends and there was never a match
                     }
                 }
-                Char::Any => {
-                    curr_state = *id;
-                    chars.next();
-                    self.recur(curr_state, chars)
+                Char::Any => {                      // if the Match is Any, then any char will be accepted
+                    curr_state = *id;               // curr_state is wherever curr_state currently points to
+                    chars.next();                   // moves iterator to nect letter in input
+                    self.recur(curr_state, chars)   // recursive call
                 }
             },
             State::Split(Some(leg_one), Some(leg_two)) => {
-                let clone = chars.clone();
-                if self.recur(*leg_one, chars) {
+                let clone = chars.clone();                  // clones iterator since chars is mutable and we need to test two (or more) possibilities for chars
+                if self.recur(*leg_one, chars) {            // if the recursive call going down the first leg returns true, then the input is accepted recusrively and input is accepted
                     true
-                } else if self.recur(*leg_two, clone) {
+                } else if self.recur(*leg_two, clone) {     // if the recursive call going down the second leg returns true, then the input is accepted recusrively and input is accepted
                     true
                 } else {
-                    false
+                    false                                   // if neither leg works, then the input is not accepted
                 }
             }
-            State::End => true,
-            _ => false,
+            State::End => true,                             // if the State is the End state, we know that the input is accepted (base case here)
+            _ => false,                                     // if there is any other state, that means return false
         }
     }
 }
@@ -138,12 +139,11 @@ mod public_api {
         assert_eq!(input.accepts("bb"), false);
         assert_eq!(input.accepts("cc"), false);
         assert_eq!(input.accepts("aa"), false);
-        /*
         let input = NFA::from("a|bc").unwrap();
         assert_eq!(input.accepts("a"), true);
         assert_eq!(input.accepts("bc"), true);
-        assert_eq!(input.accepts("ac"), false);
-        */
+        assert_eq!(input.accepts("ac"), true);
+        assert_eq!(input.accepts("bb"), false);
     }
 
     #[test]
@@ -152,8 +152,43 @@ mod public_api {
         assert_eq!(input.accepts("a"), true);
         assert_eq!(input.accepts("b"), true);
         assert_eq!(input.accepts("cd"), true);
+        assert_eq!(input.accepts("ad"), true);
+        assert_eq!(input.accepts("bd"), true);
+        assert_eq!(input.accepts("cb"), true);
+        assert_eq!(input.accepts("ca"), true);
+        assert_eq!(input.accepts("cc"), false);
     }
 
+    #[test]
+    fn input_with_any() {
+        let input = NFA::from("a...b").unwrap();
+        assert_eq!(input.accepts("ab"), false);
+        assert_eq!(input.accepts("a   b"), true);
+        assert_eq!(input.accepts("axyzb"), true);
+        assert_eq!(input.accepts("xyzb"), false);
+        assert_eq!(input.accepts("axyz"), false);
+    }
+
+    #[test]
+    fn simple_closure() {
+        let input = NFA::from("a*").unwrap();
+        assert_eq!(input.accepts(""), true);
+        assert_eq!(input.accepts("ab"), true);
+        assert_eq!(input.accepts("aaaaaaa"), true);
+    }
+
+    #[test]
+    fn more_closure() {
+        let input = NFA::from("ab*|c*a").unwrap();
+        assert_eq!(input.accepts("a"), true);
+        assert_eq!(input.accepts("abbbbbbb"), true);
+        assert_eq!(input.accepts("ccccccca"), true);
+        assert_eq!(input.accepts("abbbbbbcccc"), true);
+        assert_eq!(input.accepts("ccccccabbbb"), true);
+        assert_eq!(input.accepts("bbbbccccbbb"), false);
+        assert_eq!(input.accepts("abbbbccccca"), true);
+        assert_eq!(input.accepts("aa"), true);
+    }
 }
 /**
  * ===== Internal API =====
@@ -224,7 +259,7 @@ impl NFA {
      * representing it and its children.
      */
     fn gen_fragment(&mut self, ast: &AST) -> Fragment {
-        match ast {
+        match ast {             
             AST::AnyChar => {
                 let state = self.add(Match(Char::Any, None));
                 Fragment {
