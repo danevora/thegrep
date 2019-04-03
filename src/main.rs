@@ -64,7 +64,7 @@ fn main() {
     }
 
     let input = &opt.pattern;
-    let nfa = NFA::from(&input).unwrap();
+    let nfa = NFA::from(&format!(".*({}).*", input)).unwrap();
     if opt.path.len() > 0 {
         let matches = read_files(&opt, &nfa);
         match matches {

@@ -56,48 +56,52 @@ impl NFA {
      */
 
     pub fn accepts(&self, input: &str) -> bool {
-        let curr_state = self.start;    // sets the current state to the start
-        let chars = input.chars();      // creating an iterator over the characters of the input 
-        self.recur(curr_state, chars)   // calls recursive helper function where StateId and iterator state are kept track of
+        let curr_state = self.start; // sets the current state to the start
+        let chars = input.chars(); // creating an iterator over the characters of the input
+        self.recur(curr_state, chars) // calls recursive helper function where StateId and iterator state are kept track of
     }
 
     pub fn recur(&self, mut curr_state: StateId, mut chars: std::str::Chars) -> bool {
-        match &self.states[curr_state] {    // matches the current state to one of State's enums
-            State::Start(Some(id)) => {         // if the curr_state is the Start state, this is matched
-                curr_state = *id;               // curr_state is now set to whatever state self.start points to
-                self.recur(curr_state, chars)   // recusrive call to start testing input from state right after the start state
+        match &self.states[curr_state] {
+            // matches the current state to one of State's enums
+            State::Start(Some(id)) => {
+                // if the curr_state is the Start state, this is matched
+                curr_state = *id; // curr_state is now set to whatever state self.start points to
+                self.recur(curr_state, chars) // recusrive call to start testing input from state right after the start state
             }
-            State::Match(expected_char, Some(id)) => match expected_char {  // if the curr_state is a Match state, this is matched 
-                Char::Literal(c) => {                                       // if the Match state is of type Char::Literal, this is matched
-                    if let Some(letter) = chars.next() {                    // checks to make sure there is something left in input and moves forward on iterator
-                        if letter == *c {                                   // checks to see if the next letter in input is equal to the character matched by c
-                            curr_state = *id;                               // curr_state changes to wherever curr_state points to
-                            self.recur(curr_state, chars)                   // recursive call 
+            State::Match(expected_char, Some(id)) => match expected_char {
+                // if the curr_state is a Match state, this is matched
+                Char::Literal(c) => {
+                    if let Some(letter) = chars.next() {
+                        // checks to make sure there is something left in input and moves forward on iterator
+                        if letter == *c {
+                            // checks to see if the next letter in input is equal to the character matched by c
+                            curr_state = *id; // curr_state changes to wherever curr_state points to
+                            self.recur(curr_state, chars) // recursive call
                         } else {
-                            self.recur(self.start, chars)                   // case for if there isn't a match at curr_state, but rest of input needs to be checked. Go back to start state
+                            // self.recur(self.start, chars)                   // case for if there isn't a match at curr_state, but rest of input needs to be checked. Go back to start state
+                            false
                         }
-                    } else {        
-                        false                                               // false if the input ends and there was never a match
+                    } else {
+                        false // false if the input ends and there was never a match
                     }
                 }
-                Char::Any => {                      // if the Match is Any, then any char will be accepted
-                    curr_state = *id;               // curr_state is wherever curr_state currently points to
-                    chars.next();                   // moves iterator to nect letter in input
-                    self.recur(curr_state, chars)   // recursive call
+                Char::Any => {
+                    curr_state = *id; // curr_state is wherever curr_state currently points to
+                    if let Some(c) = chars.next() {
+                        // moves iterator to nect letter in input
+                        self.recur(curr_state, chars)
+                    } else {
+                        false
+                    } // recursive call
                 }
             },
             State::Split(Some(leg_one), Some(leg_two)) => {
-                let clone = chars.clone();                  // clones iterator since chars is mutable and we need to test two (or more) possibilities for chars
-                if self.recur(*leg_one, chars) {            // if the recursive call going down the first leg returns true, then the input is accepted recusrively and input is accepted
-                    true
-                } else if self.recur(*leg_two, clone) {     // if the recursive call going down the second leg returns true, then the input is accepted recusrively and input is accepted
-                    true
-                } else {
-                    false                                   // if neither leg works, then the input is not accepted
-                }
+                let clone = chars.clone(); // clones iterator since chars is mutable and we need to test two (or more) possibilities for chars
+                self.recur(*leg_one, chars) || self.recur(*leg_two, clone)
             }
-            State::End => true,                             // if the State is the End state, we know that the input is accepted (base case here)
-            _ => false,                                     // if there is any other state, that means return false
+            State::End => true, // if the State is the End state, we know that the input is accepted (base case here)
+            _ => false,         // if there is any other state, that means return false
         }
     }
 }
@@ -259,7 +263,7 @@ impl NFA {
      * representing it and its children.
      */
     fn gen_fragment(&mut self, ast: &AST) -> Fragment {
-        match ast {             
+        match ast {
             AST::AnyChar => {
                 let state = self.add(Match(Char::Any, None));
                 Fragment {
