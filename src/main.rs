@@ -66,7 +66,11 @@ fn main() {
     let input = &opt.pattern;
     let nfa = NFA::from(&input).unwrap();
     if opt.path.len() > 0 {
-        read_files(&opt, &nfa);
+        let matches = read_files(&opt, &nfa);
+        match matches {
+            Ok(()) => return,
+            Err(e) => eprintln!("{}", e),
+        }
     } else {
         print_stdin(&nfa);
     }

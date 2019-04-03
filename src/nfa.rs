@@ -266,8 +266,7 @@ impl NFA {
                     start: state,
                     ends: vec![state],
                 }
-            }
-            // node => panic!("Unimplemented branch of gen_fragment: {:?}", node)
+            } // node => panic!("Unimplemented branch of gen_fragment: {:?}", node)
         }
     }
 

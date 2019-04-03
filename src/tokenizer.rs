@@ -1,11 +1,11 @@
 use std::iter::Peekable;
 use std::str::Chars;
 
-/** 
+/**
  * Token types for 'thegrep' are defined below
  */
 #[derive(Debug, PartialEq)]
-    pub enum Token {
+pub enum Token {
     LParen,
     RParen,
     UnionBar,
@@ -14,11 +14,9 @@ use std::str::Chars;
     Char(char),
 }
 
-
 pub struct Tokenizer<'str> {
     chars: Peekable<Chars<'str>>,
 }
-
 
 impl<'str> Tokenizer<'str> {
     pub fn new(input: &'str str) -> Tokenizer {
@@ -28,10 +26,9 @@ impl<'str> Tokenizer<'str> {
     }
 }
 
-
 impl<'str> Iterator for Tokenizer<'str> {
     type Item = Token;
-    /** 
+    /**
      * The 'next' method returns the next
      * complete token in the Tokenizer's
      * input string or None at all
@@ -51,7 +48,7 @@ impl<'str> Iterator for Tokenizer<'str> {
     }
 }
 
-/** 
+/**
  * Unit tests for 'next' method
  */
 
@@ -116,8 +113,8 @@ mod iterator {
     }
 }
 
-/** 
- * Helper methods for each token 
+/**
+ * Helper methods for each token
  * type are defined below
  */
 
@@ -158,7 +155,7 @@ impl<'str> Tokenizer<'str> {
     fn lex_char(&mut self) -> Token {
         let c = self.chars.next().unwrap();
         match c {
-            c  => Token::Char(c),
+            c => Token::Char(c),
             _ => panic!("unknwon register"),
         }
     }
