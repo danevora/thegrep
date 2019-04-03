@@ -156,7 +156,6 @@ impl<'str> Tokenizer<'str> {
         let c = self.chars.next().unwrap();
         match c {
             c => Token::Char(c),
-            _ => panic!("unknwon register"),
         }
     }
 }
