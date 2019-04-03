@@ -1,16 +1,13 @@
-#![allow(unused)]
-
 /**
  * thegrep - Tar Heel egrep
  *
- * Author(s): Daniel Evora, Peter Morrow 
+ * Author(s): Daniel Evora, Peter Morrow
  * ONYEN(s): devora, peterjm
  *
  * UNC Honor Pledge: I pledge I have received no unauthorized aid
  * on this assignment. I further pledge not to distribute my solution
  * to this code to anyone other than the course staff and partner.
  */
-
 //importing the library for structopt
 extern crate structopt;
 use structopt::StructOpt;
@@ -18,13 +15,8 @@ use structopt::StructOpt;
 use std::io;
 
 pub mod nfa;
-use self::nfa::NFA;
 use self::nfa::helpers::nfa_dot;
-
-//initializing constants for quitting program
-const QUIT_STRING: &str = "quit\n"; 
-const EXIT_OK: i32 = 0;
-const EXIT_ERR: i32 = 1;
+use self::nfa::NFA;
 
 //set up structopt derivation for flags of thegrep
 #[derive(Debug, StructOpt)]
@@ -32,7 +24,6 @@ const EXIT_ERR: i32 = 1;
 
 //declring optionals for thegrep function
 struct Opt {
-    
     #[structopt(short = "p", long = "parse", help = "Show Parsed AST")]
     parse: bool,
 
@@ -47,7 +38,6 @@ struct Opt {
 
     #[structopt(help = "FILES")]
     path: Vec<String>,
-
 }
 
 //importing tokenizer and parser functionalities from the other files
@@ -61,8 +51,8 @@ use std::io::BufRead;
 //main takes in opt from the args passed in on the command line, if it encounters the parse or
 //tokens flag, it will carry out the helped functions for each respectively
 fn main() {
-    let opt  = Opt::from_args();
-    
+    let opt = Opt::from_args();
+
     if opt.tokens {
         eval_show_tokens(&opt.pattern);
     }
@@ -73,8 +63,7 @@ fn main() {
         eval_show_dot(&opt.pattern);
     }
 
-    let mut input = "(.)*".to_string();
-    input.push_str(&opt.pattern);
+    let input = &opt.pattern;
     let nfa = NFA::from(&input).unwrap();
     if opt.path.len() > 0 {
         read_files(&opt, &nfa);
@@ -101,8 +90,7 @@ fn read_files(opt: &Opt, nfa: &NFA) -> io::Result<()> {
 fn check<R: BufRead>(nfa: &NFA, reader: R) {
     for line in reader.lines() {
         if let Ok(point) = line {
-            let result = nfa.accepts(&point);
-            if (result) {
+            if nfa.accepts(&point) {
                 println!("{}", &point);
             }
         }
@@ -120,21 +108,20 @@ fn eval_show_tokens(input: &str) {
 }
 
 //declares a parser to parse a tokenizer of input. If everything is parsed, the returnes statement
-//from parser.rs is printed, otherwise an error is printed to stderr 
+//from parser.rs is printed, otherwise an error is printed to stderr
 fn eval_show_parse(input: &str) {
     match Parser::parse(Tokenizer::new(input)) {
         Ok(statement) => {
             println!("{:?}", statement);
-        },
+        }
         Err(msg) => eprintln!("thegrep: {}", msg),
     }
     println!("\n");
 }
 
-//helper method for when dot flag is used 
+//helper method for when dot flag is used
 fn eval_show_dot(input: &str) {
     let nfa = NFA::from(&input).unwrap();
     println!("{}", nfa_dot(&nfa));
     std::process::exit(0);
 }
-

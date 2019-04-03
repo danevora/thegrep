@@ -1,22 +1,18 @@
-use std::iter::Peekable;
-use std::str::Chars;
-
 pub mod helpers;
 
 // Starter code for PS06 - thegrep
+use self::State::*;
 /**
  * Author(s): Daniel Evora, Peter Morrow
  * Onyen(s): devora, peterjm
  *
- * UNC Honor Pledge: I pledge I have recieved no unauthorized aid 
+ * UNC Honor Pledge: I pledge I have recieved no unauthorized aid
  * on this assignment. I further pledge not to distribute my solution
  * to this code to anyone other than the course staff and partner.
- */ 
-
+ */
 use super::parser::Parser;
 use super::parser::AST;
 use super::tokenizer::Tokenizer;
-use self::State::*;
 
 /**
  * ===== Public API =====
@@ -60,53 +56,56 @@ impl NFA {
      */
     pub fn accepts(&self, input: &str) -> bool {
         let curr_state = self.start;
-        let mut chars = input.chars();
+        let chars = input.chars();
         self.recur(curr_state, chars)
-    } 
+    }
 
     pub fn recur(&self, mut curr_state: StateId, mut chars: std::str::Chars) -> bool {
-            match &self.states[curr_state] {
-                State::Start(Some(id)) => {
-                    curr_state = *id;
-                    self.recur(curr_state, chars)
-                },
-                State::Match(expected_char, Some(id)) => {
-                    match expected_char {
-                        Char::Literal(c) => {
-                            if(chars.next() == Some(*c)) {
-                                curr_state = *id;
-                                self.recur(curr_state, chars)
-                            } else {
-                                false
-                            }
-                        },
-                        _ => {
+        match &self.states[curr_state] {
+            State::Start(Some(id)) => {
+                curr_state = *id;
+                self.recur(curr_state, chars)
+            }
+            State::Match(expected_char, Some(id)) => match expected_char {
+                Char::Literal(c) => {
+                    if let Some(letter) = chars.next() {
+                        if letter == *c {
                             curr_state = *id;
                             self.recur(curr_state, chars)
-                        },
-                    }
-                },
-                State::Split(Some(leg_one), Some(leg_two)) => {
-                    let clone = chars.clone();
-                    if(self.recur(*leg_one, chars)) {
-                        true
-                    } else if (self.recur(*leg_two, clone)) {
-                        true
+                        } else {
+                            self.recur(self.start, chars)
+                        }
                     } else {
                         false
-                    }    
-                },
-                State::End => true,
-                _ => false,
-         }   
+                    }
+                }
+                Char::Any => {
+                    curr_state = *id;
+                    chars.next();
+                    self.recur(curr_state, chars)
+                }
+            },
+            State::Split(Some(leg_one), Some(leg_two)) => {
+                let clone = chars.clone();
+                if self.recur(*leg_one, chars) {
+                    true
+                } else if self.recur(*leg_two, clone) {
+                    true
+                } else {
+                    false
+                }
+            }
+            State::End => true,
+            _ => false,
+        }
     }
 }
 
 #[cfg(test)]
 mod public_api {
     use super::*;
-    
-    #[test] 
+
+    #[test]
     fn simple() {
         let input = NFA::from("a").unwrap();
         assert_eq!(input.accepts("a"), true);
@@ -128,6 +127,31 @@ mod public_api {
         let input = NFA::from("a|b").unwrap();
         assert_eq!(input.accepts("a"), true);
         assert_eq!(input.accepts("b"), true);
+    }
+
+    #[test]
+    fn alt_with_cat() {
+        let input = NFA::from("ab|ac").unwrap();
+        assert_eq!(input.accepts("ab"), true);
+        assert_eq!(input.accepts("ac"), true);
+        assert_eq!(input.accepts("bc"), false);
+        assert_eq!(input.accepts("bb"), false);
+        assert_eq!(input.accepts("cc"), false);
+        assert_eq!(input.accepts("aa"), false);
+        /*
+        let input = NFA::from("a|bc").unwrap();
+        assert_eq!(input.accepts("a"), true);
+        assert_eq!(input.accepts("bc"), true);
+        assert_eq!(input.accepts("ac"), false);
+        */
+    }
+
+    #[test]
+    fn multiple_alts() {
+        let input = NFA::from("a|b|cd").unwrap();
+        assert_eq!(input.accepts("a"), true);
+        assert_eq!(input.accepts("b"), true);
+        assert_eq!(input.accepts("cd"), true);
     }
 
 }
@@ -163,7 +187,7 @@ enum Char {
 
 /**
  * Internal representation of a fragment of an NFA being constructed
- * that keeps track of the start ID of the fragment as well as all of 
+ * that keeps track of the start ID of the fragment as well as all of
  * its unjoined end states.
  */
 #[derive(Debug)]
@@ -182,7 +206,7 @@ impl NFA {
     fn new() -> NFA {
         NFA {
             states: vec![],
-            start:  0,
+            start: 0,
         }
     }
 
@@ -207,43 +231,43 @@ impl NFA {
                     start: state,
                     ends: vec![state],
                 }
-            },
+            }
             AST::Char(c) => {
                 let state = self.add(Match(Char::Literal(*c), None));
                 Fragment {
                     start: state,
                     ends: vec![state],
                 }
-            },
+            }
             AST::Catenation(lhs, rhs) => {
                 let frag_one = self.gen_fragment(&lhs);
                 let frag_two = self.gen_fragment(&rhs);
-                let frag = self.join_fragment(&frag_one, frag_two.start);
+                self.join_fragment(&frag_one, frag_two.start);
                 Fragment {
                     start: frag_one.start,
                     ends: frag_two.ends,
                 }
-            },
+            }
             AST::Alternation(lhs, rhs) => {
                 let mut frag_one = self.gen_fragment(&lhs);
                 let mut frag_two = self.gen_fragment(&rhs);
                 let state = self.add(Split(Some(frag_one.start), Some(frag_two.start)));
                 frag_one.ends.append(&mut frag_two.ends);
                 Fragment {
-                 start: state,
-                 ends: frag_one.ends,
+                    start: state,
+                    ends: frag_one.ends,
                 }
-            },
+            }
             AST::Closure(expr) => {
-                let mut frag = self.gen_fragment(&expr);
-                let mut state = self.add(Split(Some(frag.start), None));
+                let frag = self.gen_fragment(&expr);
+                let state = self.add(Split(Some(frag.start), None));
                 self.join_fragment(&frag, state);
                 Fragment {
                     start: state,
                     ends: vec![state],
                 }
-            },
-            node => panic!("Unimplemented branch of gen_fragment: {:?}", node)
+            }
+            // node => panic!("Unimplemented branch of gen_fragment: {:?}", node)
         }
     }
 
