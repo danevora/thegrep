@@ -13,6 +13,7 @@ use self::State::*;
 use super::parser::Parser;
 use super::parser::AST;
 use super::tokenizer::Tokenizer;
+use rand::*;
 
 /**
  * ===== Public API =====
@@ -104,6 +105,36 @@ impl NFA {
             _ => false,         // if there is any other state, that means return false
         }
     }
+    /*
+    pub fn gen(&self) -> String {
+        let start = self.start;
+        let mut input = String::new();
+        self.recur_gen(start, input)
+    }
+
+    pub fn recur_gen(&self, curr_state: StateId, mut input: String) -> String {
+        match curr_state {
+            State::Start(Some(id)) => {
+                curr_state = id;
+                self.recur_gen(curr_state, input)
+            },
+            State::Match(expected_char, Some(id)) => match expected_char {
+                Char::Literal(c) => {
+                    curr_state = id;
+                    input.push(*c);
+                    self.recur_gen(curr_state, input)
+                },
+                Char::Any => {
+                    curr_state = id;
+                    input.push(rand::random::<char>());
+                    self.recur_gen(curr_state, input);
+            },
+            State::Split(Some(leg_one), Some(leg_two)) => {
+                
+            },
+        }
+    }
+    */
 }
 
 #[cfg(test)]

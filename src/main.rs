@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 /**
  * thegrep - Tar Heel egrep
  *
@@ -11,6 +13,9 @@
 //importing the library for structopt
 extern crate structopt;
 use structopt::StructOpt;
+
+
+
 //importing library fot std in/out
 use std::io;
 
@@ -30,6 +35,10 @@ struct Opt {
     #[structopt(short = "t", long = "tokens", help = "Show Tokens")]
     tokens: bool,
 
+    #[structopt(short = "g", long = "gen")]
+    gen: bool,
+    reps: u64,
+    
     #[structopt(help = "Regular Expression Pattern")]
     pattern: String,
 
@@ -38,6 +47,7 @@ struct Opt {
 
     #[structopt(help = "FILES")]
     path: Vec<String>,
+
 }
 
 //importing tokenizer and parser functionalities from the other files
@@ -61,6 +71,10 @@ fn main() {
     }
     if opt.dot {
         eval_show_dot(&opt.pattern);
+    }
+    if opt.gen {
+        let nfa = NFA::from(&format!(".*({}).*", &opt.pattern)).unwrap();
+        eval_show_gen(&nfa, opt.reps);
     }
 
     let input = &opt.pattern;
@@ -129,3 +143,11 @@ fn eval_show_dot(input: &str) {
     println!("{}", nfa_dot(&nfa));
     std::process::exit(0);
 }
+
+fn eval_show_gen(nfa: &NFA, num: u64) {
+    if (num > 0) {
+        println!("{}", nfa.gen());
+        eval_show_gen(nfa, num - 1);
+    } 
+}
+
