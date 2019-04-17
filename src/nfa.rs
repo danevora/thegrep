@@ -105,36 +105,46 @@ impl NFA {
             _ => false,         // if there is any other state, that means return false
         }
     }
-    /*
+    
     pub fn gen(&self) -> String {
         let start = self.start;
         let mut input = String::new();
         self.recur_gen(start, input)
     }
 
-    pub fn recur_gen(&self, curr_state: StateId, mut input: String) -> String {
-        match curr_state {
+    pub fn recur_gen(&self, mut curr_state: StateId, mut input: String) -> String {
+        match &self.states[curr_state] {
             State::Start(Some(id)) => {
-                curr_state = id;
+                curr_state = *id;
                 self.recur_gen(curr_state, input)
             },
             State::Match(expected_char, Some(id)) => match expected_char {
                 Char::Literal(c) => {
-                    curr_state = id;
+                    curr_state = *id;
                     input.push(*c);
                     self.recur_gen(curr_state, input)
                 },
                 Char::Any => {
-                    curr_state = id;
+                    curr_state = *id;
                     input.push(rand::random::<char>());
-                    self.recur_gen(curr_state, input);
+                    self.recur_gen(curr_state, input)
+                },
             },
             State::Split(Some(leg_one), Some(leg_two)) => {
-                
+                let choice: f64 = rand::thread_rng().gen();
+                if choice < 0.5 {
+                    curr_state = *leg_one;
+                    self.recur_gen(curr_state, input)
+                } else {
+                    curr_state = *leg_two;
+                    self.recur_gen(curr_state, input)
+                }
             },
+            State::End => input,
+            _ => panic!("Unexpected state in NFA")
         }
     }
-    */
+    
 }
 
 #[cfg(test)]
