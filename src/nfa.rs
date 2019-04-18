@@ -16,6 +16,9 @@ use super::tokenizer::Tokenizer;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
+//imports for operator overloading
+use std::ops::Add;
+
 /**
  * ===== Public API =====
  */
@@ -237,6 +240,18 @@ mod public_api {
         assert_eq!(input.accepts("aa"), true);
     }
 }
+
+
+//impl Add for NFA {
+//    type Output = NFA;
+//
+//    fn add(self, rhs: NFA) -> NFA {
+//       return self;
+//       clone self and rhs
+//       take self's state's length and add that num to each id in the rhs
+//    }
+//}
+
 /**
  * ===== Internal API =====
  */
