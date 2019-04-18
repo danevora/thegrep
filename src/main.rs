@@ -14,8 +14,6 @@
 extern crate structopt;
 use structopt::StructOpt;
 
-
-
 //importing library fot std in/out
 use std::io;
 
@@ -35,8 +33,7 @@ struct Opt {
     #[structopt(short = "t", long = "tokens", help = "Show Tokens")]
     tokens: bool,
 
-    #[structopt(short = "g", long = "gen")]
-    gen: bool,
+    #[structopt(short = "g", long = "gen", default_value = "0")]
     reps: u64,
     
     #[structopt(help = "Regular Expression Pattern")]
@@ -72,8 +69,8 @@ fn main() {
     if opt.dot {
         eval_show_dot(&opt.pattern);
     }
-    if opt.gen {
-        let nfa = NFA::from(&format!(".*({}).*", &opt.pattern)).unwrap();
+    if (opt.reps > 0)  {
+        let nfa = NFA::from(&opt.pattern).unwrap();
         eval_show_gen(&nfa, opt.reps);
     }
 
@@ -123,6 +120,7 @@ fn eval_show_tokens(input: &str) {
         println!("{:?}", token);
     }
     print!("\n");
+    std::process::exit(0);
 }
 
 //declares a parser to parse a tokenizer of input. If everything is parsed, the returnes statement
@@ -135,6 +133,7 @@ fn eval_show_parse(input: &str) {
         Err(msg) => eprintln!("thegrep: {}", msg),
     }
     println!("\n");
+    std::process::exit(0);
 }
 
 //helper method for when dot flag is used
@@ -148,6 +147,9 @@ fn eval_show_gen(nfa: &NFA, num: u64) {
     if (num > 0) {
         println!("{}", nfa.gen());
         eval_show_gen(nfa, num - 1);
-    } 
+    }
+    if (num == 0) {
+        std::process::exit(0);
+    }
 }
 

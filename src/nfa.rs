@@ -13,7 +13,8 @@ use self::State::*;
 use super::parser::Parser;
 use super::parser::AST;
 use super::tokenizer::Tokenizer;
-use rand::*;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 
 /**
  * ===== Public API =====
@@ -80,7 +81,7 @@ impl NFA {
                             curr_state = *id; // curr_state changes to wherever curr_state points to
                             self.recur(curr_state, chars) // recursive call
                         } else {
-                            // self.recur(self.start, chars)                   // case for if there isn't a match at curr_state, but rest of input needs to be checked. Go back to start state
+                            // self.recur(self.start, chars)
                             false
                         }
                     } else {
@@ -105,7 +106,7 @@ impl NFA {
             _ => false,         // if there is any other state, that means return false
         }
     }
-    
+
     pub fn gen(&self) -> String {
         let start = self.start;
         let mut input = String::new();
@@ -117,18 +118,20 @@ impl NFA {
             State::Start(Some(id)) => {
                 curr_state = *id;
                 self.recur_gen(curr_state, input)
-            },
+            }
             State::Match(expected_char, Some(id)) => match expected_char {
                 Char::Literal(c) => {
                     curr_state = *id;
                     input.push(*c);
                     self.recur_gen(curr_state, input)
-                },
+                }
                 Char::Any => {
                     curr_state = *id;
-                    input.push(rand::random::<char>());
+                    let mut rng = thread_rng();
+                    let c: char = rng.sample(&Alphanumeric);
+                    input.push(c);
                     self.recur_gen(curr_state, input)
-                },
+                }
             },
             State::Split(Some(leg_one), Some(leg_two)) => {
                 let choice: f64 = rand::thread_rng().gen();
@@ -139,12 +142,11 @@ impl NFA {
                     curr_state = *leg_two;
                     self.recur_gen(curr_state, input)
                 }
-            },
+            }
             State::End => input,
-            _ => panic!("Unexpected state in NFA")
+            _ => panic!("Unexpected state in NFA"),
         }
     }
-    
 }
 
 #[cfg(test)]
