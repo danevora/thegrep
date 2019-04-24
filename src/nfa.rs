@@ -150,6 +150,17 @@ impl NFA {
             _ => panic!("Unexpected state in NFA"),
         }
     }
+    /*  
+    fn clone_states(states: Vec::<State>) -> Vec<State> {
+        let mut clone = Vec<State>::new();
+        let mut i = 0;
+        for s in states {
+            clone[i] = s;
+            i = i + 1;
+        }
+        clone
+    }
+    */
 }
 
 #[cfg(test)]
@@ -242,15 +253,36 @@ mod public_api {
 }
 
 
-//impl Add for NFA {
-//    type Output = NFA;
-//
-//    fn add(self, rhs: NFA) -> NFA {
-//       return self;
-//       clone self and rhs
-//       take self's state's length and add that num to each id in the rhs
-//    }
-//}
+impl Add for NFA {
+    type Output = NFA;
+
+    fn add(self, rhs: NFA) -> NFA {
+        // clone self and rhs
+        // take self's state's length and add that num to each id in the rhs
+        // let lhs = self.states.clone();
+        // return self;
+        let mut lhs = Vec<State>::new();
+        let mut rhs_clone = Vec<State>::new();
+        let mut i = 0;
+        let mut k = 0;
+        for s in self.states {
+            lhs[i] = s;
+            i = i + 1;
+        }
+        for s in rhs.states {
+            rhs_clone[k] = s;
+            k = k + 1;
+        }
+        let lhs_length = lhs.len();
+        for s in rhs_clone {
+            s.StateId = s.StateId + lhs_length;
+        }
+
+    }
+
+}
+
+
 
 /**
  * ===== Internal API =====
