@@ -12,6 +12,7 @@ pub enum Token {
     KleeneStar,
     AnyChar,
     Char(char),
+    KleenePlus,
 }
 
 pub struct Tokenizer<'str> {
@@ -40,6 +41,7 @@ impl<'str> Iterator for Tokenizer<'str> {
                 '|' => self.lex_union(),
                 '*' => self.lex_kleene(),
                 '.' => self.lex_anychar(),
+                '+' => self.lex_kleeneplus(),
                 _ => self.lex_char(),
             })
         } else {
@@ -156,6 +158,14 @@ impl<'str> Tokenizer<'str> {
         let c = self.chars.next().unwrap();
         match c {
             c => Token::Char(c),
+        }
+    }
+
+    fn lex_kleeneplus(&mut self) -> Token {
+        let c = self.chars.next().unwrap();
+        match c {
+            '+' => Token::KleenePlus,
+            _ => panic!("unknown register"),
         }
     }
 }
