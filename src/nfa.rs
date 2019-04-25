@@ -16,6 +16,9 @@ use super::tokenizer::Tokenizer;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
+//imports for operator overloading
+use std::ops::Add;
+
 /**
  * ===== Public API =====
  */
@@ -24,7 +27,7 @@ use rand::{thread_rng, Rng};
  * An NFA is represented by an arena Vec of States
  * and a start state.
  */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NFA {
     start: StateId,
     states: Vec<State>,
@@ -37,7 +40,7 @@ impl NFA {
     pub fn from(regular_expression: &str) -> Result<NFA, String> {
         let mut nfa = NFA::new();
 
-        let start = nfa.add(Start(None));
+        let start = nfa.add_state(Start(None));
         nfa.start = start;
 
         // Parse the Abstract Syntax Tree of the Regular Expression
@@ -46,7 +49,7 @@ impl NFA {
         let body = nfa.gen_fragment(ast);
         nfa.join(nfa.start, body.start);
 
-        let end = nfa.add(End);
+        let end = nfa.add_state(End);
         nfa.join_fragment(&body, end);
 
         Ok(nfa)
@@ -106,6 +109,11 @@ impl NFA {
             _ => false,         // if there is any other state, that means return false
         }
     }
+
+    /**
+     * Gen function generates acceptable strings given a regular expression. 
+     * recur_gen is a recursive helper method used in gen
+     */
 
     pub fn gen(&self) -> String {
         let start = self.start;
@@ -237,6 +245,40 @@ mod public_api {
         assert_eq!(input.accepts("aa"), true);
     }
 }
+
+
+impl Add for NFA {
+    type Output = NFA;
+
+    fn add(self, rhs: NFA) -> NFA {
+        // clone self and rhs
+        // take self's state's length and add that num to each id in the rhs
+        let mut lhs = self.clone();
+        let mut rhs_clone = rhs.clone();
+        let offset = lhs.states.len();
+        lhs.states.pop();
+        for mut s in &rhs_clone.states {
+            match s {
+                State::Start(Some(id)) => {
+                    s = &State::Start(Some(id + offset));
+                },
+                State::Match(c, Some(id)) => {
+                    s = &State::Match(c.clone(), Some(id + offset));
+                },
+                State::Split(Some(id_one), Some(id_two)) => {
+                    s = &State::Split(Some(id_one + offset), Some(id_two + offset));
+                },
+                State::End => break,
+                _ => panic!("Unexpected state in NFA"),
+            }
+        }
+        lhs.states.append(&mut rhs_clone.states);
+        return lhs;
+    }
+}
+
+
+
 /**
  * ===== Internal API =====
  */
@@ -249,7 +291,7 @@ type StateId = usize;
  * - Split is a state with two epsilon transitions out
  * - End is the final accepting state
  */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum State {
     Start(Option<StateId>),
     Match(Char, Option<StateId>),
@@ -261,7 +303,7 @@ enum State {
  * Chars are the matching label of a non-epsilon edge in the
  * transition diagram representation of the NFA.
  */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Char {
     Literal(char),
     Any,
@@ -295,7 +337,7 @@ impl NFA {
     /**
      * Add a state to the NFA and get its arena ID back.
      */
-    fn add(&mut self, state: State) -> StateId {
+    fn add_state(&mut self, state: State) -> StateId {
         let idx = self.states.len();
         self.states.push(state);
         idx
@@ -308,14 +350,14 @@ impl NFA {
     fn gen_fragment(&mut self, ast: &AST) -> Fragment {
         match ast {
             AST::AnyChar => {
-                let state = self.add(Match(Char::Any, None));
+                let state = self.add_state(Match(Char::Any, None));
                 Fragment {
                     start: state,
                     ends: vec![state],
                 }
             }
             AST::Char(c) => {
-                let state = self.add(Match(Char::Literal(*c), None));
+                let state = self.add_state(Match(Char::Literal(*c), None));
                 Fragment {
                     start: state,
                     ends: vec![state],
@@ -333,7 +375,7 @@ impl NFA {
             AST::Alternation(lhs, rhs) => {
                 let mut frag_one = self.gen_fragment(&lhs);
                 let mut frag_two = self.gen_fragment(&rhs);
-                let state = self.add(Split(Some(frag_one.start), Some(frag_two.start)));
+                let state = self.add_state(Split(Some(frag_one.start), Some(frag_two.start)));
                 frag_one.ends.append(&mut frag_two.ends);
                 Fragment {
                     start: state,
@@ -342,13 +384,23 @@ impl NFA {
             }
             AST::Closure(expr) => {
                 let frag = self.gen_fragment(&expr);
-                let state = self.add(Split(Some(frag.start), None));
+                let state = self.add_state(Split(Some(frag.start), None));
                 self.join_fragment(&frag, state);
                 Fragment {
                     start: state,
                     ends: vec![state],
                 }
-            } // node => panic!("Unimplemented branch of gen_fragment: {:?}", node)
+            } 
+            AST::OneOrMore(expr) => {
+                let frag = self.gen_fragment(&expr);
+                let state = self.add_state(Split(Some(frag.start), None));
+                self.join_fragment(&frag, state);
+                Fragment {
+                    start: frag.start,
+                    ends: vec![state],
+                }
+            }
+            
         }
     }
 

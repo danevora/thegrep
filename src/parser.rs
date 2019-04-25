@@ -7,6 +7,7 @@ pub enum AST {
     Alternation(Box<AST>, Box<AST>),
     Catenation(Box<AST>, Box<AST>),
     Closure(Box<AST>),
+    OneOrMore(Box<AST>),
     Char(char),
     AnyChar,
 }
@@ -22,6 +23,10 @@ pub fn catenation(lhs: AST, rhs: AST) -> AST {
 
 pub fn closure(value: AST) -> AST {
     AST::Closure(Box::new(value))
+}
+
+pub fn one_or_more(value: AST) -> AST {
+    AST::OneOrMore(Box::new(value))
 }
 
 pub fn character(value: char) -> AST {
@@ -254,12 +259,27 @@ impl<'tokens> Parser<'tokens> {
     //star after it. If so, we return a closure that enveloped this atom, otherwise, it simply
     //returns the atom
     fn clo(&mut self) -> Result<AST, String> {
-        let atom = self.atom()?;
+        let atom = self.plus()?;
         if let Some(kleene) = self.tokens.peek() {
             match kleene {
                 Token::KleeneStar => {
                     self.take_next_token()?;
                     Ok(closure(atom))
+                }
+                _ => Ok(atom),
+            }
+        } else {
+            Ok(atom)
+        }
+    }
+
+    fn plus(&mut self) -> Result<AST, String> {
+        let atom = self.atom()?;
+        if let Some(plus) = self.tokens.peek() {
+            match plus {
+                Token::KleenePlus => {
+                    self.take_next_token()?;
+                    Ok(one_or_more(atom))
                 }
                 _ => Ok(atom),
             }
