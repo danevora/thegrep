@@ -257,7 +257,21 @@ impl Add for NFA {
         let mut rhs_clone = rhs.clone();
         let offset = lhs.states.len();
         lhs.states.pop();
-
+        for mut s in &rhs_clone.states {
+            match s {
+                State::Start(Some(id)) => {
+                    s = &State::Start(Some(id + offset));
+                },
+                State::Match(c, Some(id)) => {
+                    s = &State::Match(c.clone(), Some(id + offset));
+                },
+                State::Split(Some(id_one), Some(id_two)) => {
+                    s = &State::Split(Some(id_one + offset), Some(id_two + offset));
+                },
+                State::End => break,
+                _ => panic!("Unexpected state in NFA"),
+            }
+        }
         lhs.states.append(&mut rhs_clone.states);
         return lhs;
     }
@@ -376,7 +390,17 @@ impl NFA {
                     start: state,
                     ends: vec![state],
                 }
-            } // node => panic!("Unimplemented branch of gen_fragment: {:?}", node)
+            } 
+            AST::OneOrMore(expr) => {
+                let frag = self.gen_fragment(&expr);
+                let state = self.add_state(Split(Some(frag.start), None));
+                self.join_fragment(&frag, state);
+                Fragment {
+                    start: frag.start,
+                    ends: vec![state],
+                }
+            }
+            
         }
     }
 
