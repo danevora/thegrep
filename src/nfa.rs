@@ -105,7 +105,7 @@ impl NFA {
                 let clone = chars.clone(); // clones iterator since chars is mutable and we need to test two (or more) possibilities for chars
                 self.recur(*leg_one, chars) || self.recur(*leg_two, clone)
             }
-            State::End => true, // if the State is the End state, we know that the input is accepted (base case here)
+            State::End => chars.next() == None, // if the State is the End state, we know that the input is accepted (base case here)
             _ => false,         // if there is any other state, that means return false
         }
     }
@@ -115,25 +115,25 @@ impl NFA {
      * recur_gen is a recursive helper method used in gen
      */
 
-    pub fn gen(&self) -> String {
-        let start = self.start;
-        let mut input = String::new();
-        self.recur_gen(start, input)
+    pub fn gen(&self) -> String { //function that will call recursive function to generate string
+        let start = self.start; 
+        let mut input = String::new(); //creates a new string
+        self.recur_gen(start, input) //calls recursive function
     }
 
     pub fn recur_gen(&self, mut curr_state: StateId, mut input: String) -> String {
-        match &self.states[curr_state] {
-            State::Start(Some(id)) => {
+        match &self.states[curr_state] { //matches states in NFA
+            State::Start(Some(id)) => { //if its a start, moves to the next state
                 curr_state = *id;
                 self.recur_gen(curr_state, input)
             }
             State::Match(expected_char, Some(id)) => match expected_char {
-                Char::Literal(c) => {
+                Char::Literal(c) => { //if its a match with a specified character, it adds this to the string
                     curr_state = *id;
                     input.push(*c);
                     self.recur_gen(curr_state, input)
                 }
-                Char::Any => {
+                Char::Any => { //if its a match with AnyChar, adds a random char to the string
                     curr_state = *id;
                     let mut rng = thread_rng();
                     let c: char = rng.sample(&Alphanumeric);
@@ -141,7 +141,7 @@ impl NFA {
                     self.recur_gen(curr_state, input)
                 }
             },
-            State::Split(Some(leg_one), Some(leg_two)) => {
+            State::Split(Some(leg_one), Some(leg_two)) => { //if its a split, it will randomly choose which path to take
                 let choice: f64 = rand::thread_rng().gen();
                 if choice < 0.5 {
                     curr_state = *leg_one;
@@ -151,7 +151,7 @@ impl NFA {
                     self.recur_gen(curr_state, input)
                 }
             }
-            State::End => input,
+            State::End => input, //if it has reached the end of the NFA, returns the string
             _ => panic!("Unexpected state in NFA"),
         }
     }
@@ -209,8 +209,6 @@ mod public_api {
         assert_eq!(input.accepts("cd"), true);
         assert_eq!(input.accepts("ad"), true);
         assert_eq!(input.accepts("bd"), true);
-        assert_eq!(input.accepts("cb"), true);
-        assert_eq!(input.accepts("ca"), true);
         assert_eq!(input.accepts("cc"), false);
     }
 
@@ -244,6 +242,16 @@ mod public_api {
         assert_eq!(input.accepts("abbbbccccca"), true);
         assert_eq!(input.accepts("aa"), true);
     }
+    
+    #[test]
+    fn simple_add() {
+        let ab = NFA::from("ab").unwrap();
+        let cd = NFA::from("cd").unwrap();
+        let abcd = ab + cd;
+        assert_eq!(abcd.accepts("abcd"), true);
+        assert!(!abcd.accepts("abcde"));    
+    }
+
 }
 
 
@@ -255,29 +263,27 @@ impl Add for NFA {
         // take self's state's length and add that num to each id in the rhs
         let mut lhs = self.clone();
         let mut rhs_clone = rhs.clone();
-        let offset = lhs.states.len();
+        let offset = lhs.states.len() - 1;
         lhs.states.pop();
-        for mut s in &rhs_clone.states {
+        for s in &rhs_clone.states {
             match s {
                 State::Start(Some(id)) => {
-                    s = &State::Start(Some(id + offset));
+                    lhs.states.push(State::Start(Some(id + offset)));
                 },
                 State::Match(c, Some(id)) => {
-                    s = &State::Match(c.clone(), Some(id + offset));
+                    lhs.states.push(State::Match(c.clone(), Some(id + offset)));
                 },
                 State::Split(Some(id_one), Some(id_two)) => {
-                    s = &State::Split(Some(id_one + offset), Some(id_two + offset));
+                    lhs.states.push(State::Split(Some(id_one + offset), Some(id_two + offset)));
                 },
-                State::End => break,
+                State::End => lhs.states.push(State::End),
                 _ => panic!("Unexpected state in NFA"),
             }
         }
-        lhs.states.append(&mut rhs_clone.states);
-        return lhs;
+        println!("{:?}", lhs);
+        lhs
     }
 }
-
-
 
 /**
  * ===== Internal API =====
@@ -391,7 +397,10 @@ impl NFA {
                     ends: vec![state],
                 }
             } 
-            AST::OneOrMore(expr) => {
+
+            //implementation of one or more is similar to closure but the start is the beginning of
+            //the frag instead of the state
+            AST::OneOrMore(expr) => { 
                 let frag = self.gen_fragment(&expr);
                 let state = self.add_state(Split(Some(frag.start), None));
                 self.join_fragment(&frag, state);

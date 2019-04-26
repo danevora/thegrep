@@ -152,4 +152,3 @@ fn eval_show_gen(nfa: &NFA, num: u64) {
         std::process::exit(0);
     }
 }
-
