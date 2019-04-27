@@ -197,7 +197,6 @@ mod public_api {
         let input = NFA::from("a|bc").unwrap();
         assert_eq!(input.accepts("a"), true);
         assert_eq!(input.accepts("bc"), true);
-        assert_eq!(input.accepts("ac"), true);
         assert_eq!(input.accepts("bb"), false);
     }
 
@@ -207,8 +206,6 @@ mod public_api {
         assert_eq!(input.accepts("a"), true);
         assert_eq!(input.accepts("b"), true);
         assert_eq!(input.accepts("cd"), true);
-        assert_eq!(input.accepts("ad"), true);
-        assert_eq!(input.accepts("bd"), true);
         assert_eq!(input.accepts("cc"), false);
     }
 
@@ -226,7 +223,6 @@ mod public_api {
     fn simple_closure() {
         let input = NFA::from("a*").unwrap();
         assert_eq!(input.accepts(""), true);
-        assert_eq!(input.accepts("ab"), true);
         assert_eq!(input.accepts("aaaaaaa"), true);
     }
 
@@ -236,11 +232,8 @@ mod public_api {
         assert_eq!(input.accepts("a"), true);
         assert_eq!(input.accepts("abbbbbbb"), true);
         assert_eq!(input.accepts("ccccccca"), true);
-        assert_eq!(input.accepts("abbbbbbcccc"), true);
-        assert_eq!(input.accepts("ccccccabbbb"), true);
         assert_eq!(input.accepts("bbbbccccbbb"), false);
-        assert_eq!(input.accepts("abbbbccccca"), true);
-        assert_eq!(input.accepts("aa"), true);
+        assert_eq!(input.accepts("aa"), false);
     }
     
     #[test]
