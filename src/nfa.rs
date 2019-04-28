@@ -161,6 +161,10 @@ impl NFA {
 mod public_api {
     use super::*;
 
+    /**
+     * Tests for accepts method 
+     */
+
     #[test]
     fn simple() {
         let input = NFA::from("a").unwrap();
@@ -235,14 +239,51 @@ mod public_api {
         assert_eq!(input.accepts("bbbbccccbbb"), false);
         assert_eq!(input.accepts("aa"), false);
     }
+
+    #[test]
+    fn one_or_more() {
+        let input = NFA::from("a+").unwrap();
+        assert_eq!(input.accepts("a"), true);
+        assert_eq!(input.accepts("aaaaaaa"), true);
+        assert_eq!(input.accepts(""), false);
+    }
+
+    /** 
+     * Tests for gen method
+     */
+
+    #[test]
+    fn cat_gen() {
+        let nfa = NFA::from("abc").unwrap();
+        assert_eq!(nfa.accepts(&nfa.gen()), true);
+    }
+
+    #[test]
+    fn alt_gen() {
+        let nfa = NFA::from("a|b|c").unwrap();
+        assert_eq!(nfa.accepts(&nfa.gen()), true);
+    }
+
+    #[test]
+    fn clo_gen() {
+        let nfa = NFA::from("(ab)*").unwrap();
+        assert_eq!(nfa.accepts(&nfa.gen()), true);
+    }
     
     #[test]
-    fn simple_add() {
-        let ab = NFA::from("ab").unwrap();
-        let cd = NFA::from("cd").unwrap();
-        let abcd = ab + cd;
-        assert_eq!(abcd.accepts("abcd"), true);
-        assert!(!abcd.accepts("abcde"));    
+    fn plus_gen() {
+        let nfa = NFA::from("ab+").unwrap();
+        assert_eq!(nfa.accepts(&nfa.gen()), true);
+    }
+    
+    #[test]
+    fn crazy_input() {
+        let nfa_1 = NFA::from("omg( loll*| ha(ha)*)*").unwrap();
+        assert_eq!(nfa_1.accepts(&nfa_1.gen()), true);
+        let nfa_2 = NFA::from("(tarr*|heee*ll*ss*)").unwrap();
+        assert_eq!(nfa_2.accepts(&nfa_2.gen()), true);
+        let nfa_3 = NFA::from("pass: s.a.f.e+").unwrap();
+        assert_eq!(nfa_3.accepts(&nfa_3.gen()), true);
     }
 
 }
@@ -253,12 +294,14 @@ impl Add for NFA {
 
     fn add(self, rhs: NFA) -> NFA {
         // clone self and rhs
-        // take self's state's length and add that num to each id in the rhs
         let mut lhs = self.clone();
         let mut rhs_clone = rhs.clone();
+        // use lhs states length as an offset to alter rhs' StateIds
         let offset = lhs.states.len() - 1;
+        // pop the End state off of lhs
         lhs.states.pop();
         for s in &rhs_clone.states {
+            // loop through rhs' states and push them onto lhs with new StateId
             match s {
                 State::Start(Some(id)) => {
                     lhs.states.push(State::Start(Some(id + offset)));
@@ -276,6 +319,64 @@ impl Add for NFA {
         println!("{:?}", lhs);
         lhs
     }
+}
+
+#[cfg(test)]
+mod add_tests {
+    use super::*;
+    
+    #[test]
+    fn simple_add() {
+        let ab = NFA::from("ab").unwrap();
+        let cd = NFA::from("cd").unwrap();
+        let abcd = ab + cd;
+        assert!(abcd.accepts("abcd"));
+        assert!(!abcd.accepts("abcde"));
+    }
+
+    #[test] 
+    fn clo_add() {
+        let a_star = NFA::from("a*").unwrap();
+        let b_star = NFA::from("b*").unwrap();
+        let ab = a_star + b_star;
+        assert!(ab.accepts("a"));
+        assert!(ab.accepts("b"));
+        assert!(ab.accepts("ab"));
+        assert!(ab.accepts("aabbb"));
+    }
+
+    #[test]
+    fn alt_add() {
+        let ab_alt = NFA::from("(a|b)").unwrap();
+        let cd_alt = NFA::from("(c|d)").unwrap();
+        let abcd = ab_alt + cd_alt;
+        assert!(abcd.accepts("ac"));
+        assert!(abcd.accepts("bc"));
+        assert!(!abcd.accepts("abcd"));
+    }
+    
+    #[test]
+    fn plus_add() {
+        let a_plus = NFA::from("a+").unwrap();
+        let b_plus = NFA::from("b+").unwrap();
+        let ab = a_plus + b_plus;
+        assert!(ab.accepts("ab"));
+        assert!(ab.accepts("aaaaabbbbbbbb"));
+        assert!(!ab.accepts("b"));
+        assert!(!ab.accepts("a"));
+    }
+
+    #[test]
+    fn crazy_add() {
+        let lhs = NFA::from("a+(b|c)*").unwrap();
+        let rhs = NFA::from("(..)+").unwrap();
+        let nfa = lhs + rhs;
+        assert!(nfa.accepts("aabcccdd"));
+        assert!(nfa.accepts("add"));
+        assert!(nfa.accepts("abc"));
+        assert!(!nfa.accepts("bcdd"));
+    }
+
 }
 
 /**

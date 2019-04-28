@@ -106,6 +106,14 @@ mod iterator {
     }
 
     #[test]
+    fn kleene_plus() {
+        let mut tokens = Tokenizer::new("a+");
+        assert_eq!(tokens.next(), Some(Token::Char('a')));
+        assert_eq!(tokens.next(), Some(Token::KleenePlus));
+        assert_eq!(tokens.next(), None);
+    }
+
+    #[test]
     fn whitespace() {
         let mut tokens = Tokenizer::new("\n\t ");
         assert_eq!(tokens.next(), Some(Token::Char('\n')));
@@ -211,5 +219,12 @@ mod helper_method {
         let mut tokens = Tokenizer::new("a");
         assert_eq!(tokens.lex_char(), Token::Char('a'));
         assert_eq!(tokens.chars.next(), None);
+    }
+
+    #[test]
+    fn lex_kleeneplus() {
+        let mut tokens = Tokenizer::new("+");
+        assert_eq!(tokens.lex_kleeneplus(), Token::KleenePlus);
+        assert_eq!(tokens.next(), None);
     }
 }

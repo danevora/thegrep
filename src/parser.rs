@@ -58,7 +58,12 @@ impl<'tokens> Parser<'tokens> {
 #[cfg(test)]
 mod public_api {
     use super::*;
-
+    
+    #[test]
+    fn parse_one_or_more() {
+        let kleene_plus = Parser::parse(Tokenizer::new("a+")).unwrap();
+        assert_eq!(one_or_more(character('a')), kleene_plus);
+    }
     #[test]
     fn parse_atoms() {
         let atom_char = Parser::parse(Tokenizer::new("a")).unwrap();
@@ -210,6 +215,7 @@ mod public_api {
         assert_eq!(Parser::from(".").atom().unwrap(), AST::AnyChar);
         assert_eq!(Parser::from("(a)").atom().unwrap(), character('a'));
     }
+
 
 }
 
